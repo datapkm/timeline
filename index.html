@@ -51,6 +51,16 @@
                 navigator.serviceWorker.register('./sw.js').catch(err => console.error("Service Worker Error:", err));
             });
         }
+
+        // Trik agar iframe memuat data terbaru (bypass cache) HANYA SEKALI saat pertama kali dibuka,
+        // tanpa melakukan refresh berulang-ulang di latar belakang.
+        window.addEventListener('DOMContentLoaded', () => {
+            const iframe = document.getElementById('app-iframe');
+            const baseUrl = "https://script.google.com/macros/s/AKfycbzsYkQ6yj1rCV97jWoQCTaW711pmmR-yJaKzca00LyhytgyCBwWb7S-nbmgq0fG1mif/exec";
+            
+            // Tambahkan timestamp agar logo/data terbaru dari Google Script langsung muncul
+            iframe.src = baseUrl + '?t=' + new Date().getTime();
+        });
     </script>
 
 </body>
