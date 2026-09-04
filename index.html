@@ -62,46 +62,46 @@
             const container = document.getElementById('iframe-container');
             const oldIframe = document.getElementById('app-iframe');
 
-            // Buat iframe baru untuk memuat data terbaru di latar belakang
+            // 1. Buat elemen iframe baru
             const newIframe = document.createElement('iframe');
-            newIframe.id = 'app-iframe';
             newIframe.setAttribute('allow', 'camera; geolocation; microphone; fullscreen');
             newIframe.setAttribute('allowfullscreen', 'true');
-            newIframe.style.opacity = '0'; // Sembunyikan dulu sampai selesai dimuat
+            newIframe.style.opacity = '0'; 
             
-            // Tambahkan parameter waktu (timestamp) agar mengambil data terbaru tanpa cache lama
-            newIframe.src = baseUrl + '?t=' + new Date().getTime();
+            // 2. WAJIB: Masukkan ke container HINGGA browser bisa mulai merender
+            container.appendChild(newIframe);
 
+            // 3. Tangkap event setelah iframe selesai memuat data
             newIframe.onload = () => {
-                // Begitu iframe baru siap, masukkan ke container
-                container.appendChild(newIframe);
-                
-                // Munculkan iframe baru secara perlahan (fade-in)
+                // Munculkan iframe baru dengan transisi fade-in
                 setTimeout(() => {
                     newIframe.style.opacity = '1';
                 }, 50);
 
-                // Hapus iframe lama setelah transisi selesai
+                // Hapus iframe lama dan kembalikan status
                 setTimeout(() => {
-                    if (oldIframe && oldIframe !== newIframe) {
+                    if (oldIframe && oldIframe.parentNode) {
                         oldIframe.remove();
                     }
+                    newIframe.id = 'app-iframe';
                     isRefreshing = false;
                 }, 350);
             };
+
+            // 4. Picu pemuatan data ke backend GAS
+            newIframe.src = baseUrl + '?t=' + new Date().getTime();
         }
 
-        // Refresh otomatis secara senyap saat aplikasi kembali dibuka dari background HP
+        // Tambahkan delay 300ms agar jaringan HP siap saat aplikasi dibuka dari background
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                refreshAppSilently();
+                setTimeout(refreshAppSilently, 300);
             }
         });
 
-        // Refresh otomatis jika halaman dipanggil kembali dari cache browser (bfcache)
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
-                refreshAppSilently();
+                setTimeout(refreshAppSilently, 300);
             }
         });
     </script>
