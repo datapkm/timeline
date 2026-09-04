@@ -31,7 +31,6 @@
             position: absolute;
             top: 0;
             left: 0;
-            transition: opacity 0.3s ease;
         }
     </style>
 </head>
@@ -52,55 +51,6 @@
                 navigator.serviceWorker.register('./sw.js').catch(err => console.error("Service Worker Error:", err));
             });
         }
-
-        const baseUrl = "https://script.google.com/macros/s/AKfycbzsYkQ6yj1rCV97jWoQCTaW711pmmR-yJaKzca00LyhytgyCBwWb7S-nbmgq0fG1mif/exec";
-        let isRefreshing = false;
-
-        // Fungsi memuat ulang data secara senyap di latar belakang
-        function refreshAppSilently() {
-            if (isRefreshing) return;
-            isRefreshing = true;
-
-            const container = document.getElementById('iframe-container');
-            const oldIframe = document.getElementById('app-iframe');
-
-            const newIframe = document.createElement('iframe');
-            newIframe.setAttribute('allow', 'camera; geolocation; microphone; fullscreen');
-            newIframe.setAttribute('allowfullscreen', 'true');
-            newIframe.style.opacity = '0'; 
-            
-            container.appendChild(newIframe);
-
-            newIframe.onload = () => {
-                setTimeout(() => {
-                    newIframe.style.opacity = '1';
-                }, 50);
-
-                setTimeout(() => {
-                    if (oldIframe && oldIframe.parentNode) {
-                        oldIframe.remove();
-                    }
-                    newIframe.id = 'app-iframe';
-                    isRefreshing = false;
-                }, 400); 
-            };
-
-            newIframe.src = baseUrl + '?t=' + new Date().getTime();
-        }
-
-        // Pemicu pembaruan saat aplikasi dibuka kembali dari background
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                setTimeout(refreshAppSilently, 300);
-            }
-        });
-
-        // Pemicu pembaruan saat kembali dari cache browser
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                setTimeout(refreshAppSilently, 300);
-            }
-        });
     </script>
 
 </body>
