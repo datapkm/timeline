@@ -38,7 +38,7 @@
         #refresh-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(248, 250, 252, 0.6);
+            background: rgba(248, 250, 252, 0.65);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 9999;
@@ -56,33 +56,58 @@
             pointer-events: auto;
         }
 
-        .refresh-spinner {
-            border: 4px solid rgba(47, 68, 56, 0.1); /* Warna sage pudar */
-            width: 42px; height: 42px;
-            border-radius: 50%;
-            border-left-color: #2f4438; /* Warna primer sage */
-            animation: spin 1s linear infinite;
-            margin-bottom: 16px;
+        /* ANIMASI POHON SAGE */
+        .tree-loader {
+            margin-bottom: 24px;
+            width: 64px;
+            height: 64px;
+        }
+
+        .tree-trunk {
+            stroke: #877f72; /* Fundy Slate */
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .leaf {
+            animation: leaf-breathe 1.5s infinite alternate ease-in-out;
+        }
+
+        /* Mengatur titik pusat skala masing-masing daun sesuai koordinat cx & cy */
+        .leaf-1 { fill: #2f4438; transform-origin: 32px 16px; animation-delay: 0s; }    /* Evergreen */
+        .leaf-2 { fill: #b0b7a0; transform-origin: 18px 28px; animation-delay: 0.4s; }  /* Dry Leaf */
+        .leaf-3 { fill: #877f72; transform-origin: 46px 24px; animation-delay: 0.8s; }  /* Fundy Slate */
+
+        @keyframes leaf-breathe {
+            0% { transform: scale(0.85); opacity: 0.7; }
+            100% { transform: scale(1.15); opacity: 1; }
         }
 
         .refresh-text {
             color: #2f4438;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
-            letter-spacing: 1px;
-        }
-
-        @keyframes spin { 
-            0% { transform: rotate(0deg); } 
-            100% { transform: rotate(360deg); } 
+            letter-spacing: 1.5px;
         }
     </style>
 </head>
 <body>
 
-    <!-- OVERLAY LOADING -->
+    <!-- OVERLAY LOADING POHON -->
     <div id="refresh-overlay">
-        <div class="refresh-spinner"></div>
+        <svg class="tree-loader" viewBox="0 0 64 64">
+            <!-- Batang dan Ranting -->
+            <path class="tree-trunk" d="M32 60 L32 24" />
+            <path class="tree-trunk" d="M32 42 L20 32" />
+            <path class="tree-trunk" d="M32 36 L44 26" />
+            
+            <!-- Daun / Foliage -->
+            <circle cx="32" cy="16" r="12" class="leaf leaf-1" />
+            <circle cx="18" cy="28" r="10" class="leaf leaf-2" />
+            <circle cx="46" cy="24" r="9"  class="leaf leaf-3" />
+        </svg>
         <div class="refresh-text">MENCARI TIMELINE...</div>
     </div>
 
@@ -95,7 +120,6 @@
     </div>
 
     <script>
-        // Registrasi Service Worker untuk PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(err => console.error("Service Worker Error:", err));
@@ -113,51 +137,40 @@
             const oldIframe = document.getElementById('app-iframe');
             const overlay = document.getElementById('refresh-overlay');
 
-            // 1. Tampilkan layar blur dan loading terlebih dahulu
             overlay.classList.add('active');
 
-            // 2. Buat iframe baru
             const newIframe = document.createElement('iframe');
             newIframe.setAttribute('allow', 'camera; geolocation; microphone; fullscreen');
             newIframe.setAttribute('allowfullscreen', 'true');
             newIframe.style.opacity = '0'; 
             
-            // 3. Masukkan ke DOM agar mulai memuat
             container.appendChild(newIframe);
 
-            // 4. Tunggu HINGGA halaman di dalam iframe benar-benar termuat sempurna
             newIframe.onload = () => {
-                
-                // Munculkan iframe baru secara visual
                 setTimeout(() => {
                     newIframe.style.opacity = '1';
                 }, 50);
 
-                // Setelah iframe baru stabil, hapus iframe lama DAN hilangkan layar loading
                 setTimeout(() => {
                     if (oldIframe && oldIframe.parentNode) {
                         oldIframe.remove();
                     }
                     newIframe.id = 'app-iframe';
                     
-                    // Hilangkan efek blur dan loading
                     overlay.classList.remove('active');
                     isRefreshing = false;
-                }, 400); // Jeda tambahan memastikan render visual sudah mulus
+                }, 400); 
             };
 
-            // 5. Eksekusi pemanggilan data (tambahkan parameter waktu agar tidak kena cache)
             newIframe.src = baseUrl + '?t=' + new Date().getTime();
         }
 
-        // Pemicu saat aplikasi dibuka dari background
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 setTimeout(refreshAppWithLoading, 300);
             }
         });
 
-        // Pemicu saat aplikasi dipanggil dari cache navigasi (kembali/maju)
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
                 setTimeout(refreshAppWithLoading, 300);
