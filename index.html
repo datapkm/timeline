@@ -24,27 +24,24 @@
             background-color: #f8fafc;
         }
 
-        /* Transisi blur untuk iframe */
         iframe {
             width: 100%;
             height: 100%;
             border: none;
-            transition: filter 0.4s ease, opacity 0.4s ease;
-        }
-        iframe.is-refreshing {
-            filter: blur(8px);
-            opacity: 0.6;
-        }
-
-        /* Overlay Loading */
-        #refresh-overlay {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(248, 250, 252, 0.4);
-            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+
+        /* OVERLAY LOADING & BLUR */
+        #refresh-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(248, 250, 252, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -53,40 +50,44 @@
             pointer-events: none;
             transition: opacity 0.4s ease;
         }
+
         #refresh-overlay.active {
             opacity: 1;
-            pointer-events: all;
+            pointer-events: auto;
         }
 
-        /* Animasi Spinner ala Seasons of Sage */
-        .spinner {
-            width: 42px;
-            height: 42px;
-            border: 4px solid rgba(47, 68, 56, 0.15); /* Transparan sage */
-            border-left-color: #2f4438; /* Warna primer */
+        .refresh-spinner {
+            border: 4px solid rgba(47, 68, 56, 0.1); /* Warna sage pudar */
+            width: 42px; height: 42px;
             border-radius: 50%;
+            border-left-color: #2f4438; /* Warna primer sage */
             animation: spin 1s linear infinite;
             margin-bottom: 16px;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        .loading-text {
+        .refresh-text {
             color: #2f4438;
-            font-weight: 600;
-            font-size: 15px;
-            letter-spacing: 0.5px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
         }
     </style>
 </head>
 <body>
 
-    <div id="iframe-container">
-        <!-- Overlay Loading -->
-        <div id="refresh-overlay">
-            <div class="spinner"></div>
-            <div class="loading-text">Memperbarui Data...</div>
-        </div>
+    <!-- OVERLAY LOADING -->
+    <div id="refresh-overlay">
+        <div class="refresh-spinner"></div>
+        <div class="refresh-text">MENCARI TIMELINE...</div>
+    </div>
 
+    <!-- IFRAME CONTAINER -->
+    <div id="iframe-container">
         <iframe id="app-iframe" src="https://script.google.com/macros/s/AKfycbzsYkQ6yj1rCV97jWoQCTaW711pmmR-yJaKzca00LyhytgyCBwWb7S-nbmgq0fG1mif/exec" 
                 allow="camera; geolocation; microphone; fullscreen" 
                 allowfullscreen>
@@ -101,44 +102,65 @@
             });
         }
 
-        const iframe = document.getElementById('app-iframe');
-        const overlay = document.getElementById('refresh-overlay');
-        const baseUrl = iframe.src.split('?')[0];
+        const baseUrl = "https://script.google.com/macros/s/AKfycbzsYkQ6yj1rCV97jWoQCTaW711pmmR-yJaKzca00LyhytgyCBwWb7S-nbmgq0fG1mif/exec";
         let isRefreshing = false;
 
-        function refreshAppWithBlur() {
+        function refreshAppWithLoading() {
             if (isRefreshing) return;
             isRefreshing = true;
 
-            // 1. Tampilkan animasi loading dan berikan efek blur pada iframe
-            overlay.classList.add('active');
-            iframe.classList.add('is-refreshing');
+            const container = document.getElementById('iframe-container');
+            const oldIframe = document.getElementById('app-iframe');
+            const overlay = document.getElementById('refresh-overlay');
 
-            // 2. Tangkap event ketika iframe sudah selesai memuat data baru
-            iframe.onload = () => {
-                // Beri jeda kecil agar proses render di dalam iframe benar-benar tuntas
+            // 1. Tampilkan layar blur dan loading terlebih dahulu
+            overlay.classList.add('active');
+
+            // 2. Buat iframe baru
+            const newIframe = document.createElement('iframe');
+            newIframe.setAttribute('allow', 'camera; geolocation; microphone; fullscreen');
+            newIframe.setAttribute('allowfullscreen', 'true');
+            newIframe.style.opacity = '0'; 
+            
+            // 3. Masukkan ke DOM agar mulai memuat
+            container.appendChild(newIframe);
+
+            // 4. Tunggu HINGGA halaman di dalam iframe benar-benar termuat sempurna
+            newIframe.onload = () => {
+                
+                // Munculkan iframe baru secara visual
                 setTimeout(() => {
+                    newIframe.style.opacity = '1';
+                }, 50);
+
+                // Setelah iframe baru stabil, hapus iframe lama DAN hilangkan layar loading
+                setTimeout(() => {
+                    if (oldIframe && oldIframe.parentNode) {
+                        oldIframe.remove();
+                    }
+                    newIframe.id = 'app-iframe';
+                    
+                    // Hilangkan efek blur dan loading
                     overlay.classList.remove('active');
-                    iframe.classList.remove('is-refreshing');
                     isRefreshing = false;
-                }, 300);
+                }, 400); // Jeda tambahan memastikan render visual sudah mulus
             };
 
-            // 3. Perbarui sumber data iframe (tambahkan timestamp)
-            iframe.src = baseUrl + '?t=' + new Date().getTime();
+            // 5. Eksekusi pemanggilan data (tambahkan parameter waktu agar tidak kena cache)
+            newIframe.src = baseUrl + '?t=' + new Date().getTime();
         }
 
-        // Jalankan refresh saat pengguna kembali membuka PWA
+        // Pemicu saat aplikasi dibuka dari background
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
-                setTimeout(refreshAppWithBlur, 300); // Jeda agar internet HP siap
+                setTimeout(refreshAppWithLoading, 300);
             }
         });
 
-        // Jalankan refresh jika halaman dipanggil dari cache
+        // Pemicu saat aplikasi dipanggil dari cache navigasi (kembali/maju)
         window.addEventListener('pageshow', (event) => {
             if (event.persisted) {
-                setTimeout(refreshAppWithBlur, 300);
+                setTimeout(refreshAppWithLoading, 300);
             }
         });
     </script>
