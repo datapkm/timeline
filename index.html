@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Timeline</title>
+    <link rel="manifest" href="./manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            overflow: hidden; 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+        }
+
+        /* Container Iframe (Penuh 100%) */
+        #iframe-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- IFRAME APLIKASI GAS -->
+    <div id="iframe-container">
+        <iframe src="https://script.google.com/macros/s/AKfycbzsYkQ6yj1rCV97jWoQCTaW711pmmR-yJaKzca00LyhytgyCBwWb7S-nbmgq0fG1mif/exec" 
+                allow="camera; geolocation; microphone; fullscreen" 
+                allowfullscreen>
+        </iframe>
+    </div>
+
+    <script>
+        // Registrasi Service Worker untuk PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.error("Service Worker Error:", err));
+            });
+        }
+    </script>
+
+</body>
+</html>
